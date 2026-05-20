@@ -10,8 +10,9 @@ ResNet50: 38% Accuracy
 
 The results showed that the Custom CNN generalized much better to real-field conditions, while transfer learning models struggled because of domain mismatch and background complexity.
 
-🧠 Models Used
-🔹 Custom CNN
+##Models Used
+
+###Custom CNN
 
 A task-specific CNN architecture designed for noisy real-field images.
 
@@ -28,7 +29,8 @@ Adam Optimizer
 Learning Rate Fine-Tuning
 Data Augmentation
 Regularization to reduce overfitting
-🔹 VGG16 (Transfer Learning)
+
+###VGG16 (Transfer Learning)
 
 A pre-trained CNN model originally trained on ImageNet and fine-tuned for tomato disease classification.
 
@@ -49,7 +51,8 @@ Techniques Used:
 Transfer Learning
 SGD Optimizer with Momentum
 Fine-Tuning
-🔹 ResNet50 (Transfer Learning)
+
+###ResNet50 (Transfer Learning)
 
 A deep residual learning model capable of learning complex visual patterns.
 
@@ -64,7 +67,8 @@ Residual Connections
 Adam Optimizer
 Transfer Learning
 Feature Extraction
-🌐 Web Application
+
+##Web Application
 
 A web application was developed using Flask that allowed users to:
 
@@ -75,7 +79,7 @@ Get a warning if prediction confidence was below 60%
 
 The application was designed with a simple and farmer-friendly interface so it could be easily used in practical agricultural environments.
 
-🗂 Dataset
+##Dataset
 
 The dataset contained:
 
@@ -98,7 +102,7 @@ Two-Spotted Spider Mite
 Tomato Yellow Leaf Curl Virus
 Tomato Mosaic Virus
 Healthy
-🔧 Technologies Used
+##Technologies Used
 Python
 TensorFlow / Keras
 Flask
