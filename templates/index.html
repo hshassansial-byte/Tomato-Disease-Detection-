@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Plant Disease Detection</title>
+    <style>
+        /* Base Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Main Container */
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 650px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            color: #27ae60;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        /* Upload Options - Two Buttons */
+        .upload-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            padding: 20px;
+            border: 3px dashed #27ae60;
+            border-radius: 15px;
+            background: #f0fff4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            background: #d5f4e6;
+            border-color: #229954;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.2);
+        }
+
+        .option-btn:active {
+            transform: translateY(0);
+        }
+
+        .option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .option-text {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Hidden File Input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Permission Modal */
+        .permission-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .permission-modal.active {
+            display: flex;
+        }
+
+        .permission-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            animation: modalSlide 0.3s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .permission-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .permission-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .permission-text {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .permission-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Camera View Container */
+        .camera-container {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .camera-container.active {
+            display: block;
+        }
+
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #cameraView {
+            width: 100%;
+            display: block;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        #capturedCanvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .camera-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            border: 3px solid rgba(46, 204, 113, 0.6);
+            border-radius: 15px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .capture-button-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .capture-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            border: 4px solid #3498db;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-capture:active + .capture-ring {
+            opacity: 1;
+        }
+
+        /* Image Preview */
+        .preview-container {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        #imagePreview {
+            width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 15px;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #d5dbdb;
+        }
+
+        .btn-secondary:active {
+            background: #bdc3c7;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-danger:active {
+            background: #a93226;
+        }
+
+        .btn-capture {
+            background: #3498db;
+            color: white;
+            font-size: 1.1rem;
+            padding: 18px;
+            position: relative;
+        }
+
+        .btn-capture:hover {
+            background: #2980b9;
+        }
+
+        .btn-capture:active {
+            background: #21618c;
+            transform: scale(0.95);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #ecf0f1;
+            border-top: 4px solid #27ae60;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Results Section */
+        .results {
+            display: none;
+            background: #f0fff4;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #27ae60;
+            margin-top: 20px;
+        }
+
+        .results.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .result-item {
+            margin-bottom: 18px;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #27ae60;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-value {
+            color: #2c3e50;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .disease-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #e74c3c;
+            text-transform: capitalize;
+        }
+
+        .disease-name.healthy {
+            color: #27ae60;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .confidence-badge.low {
+            background: #e67e22;
+        }
+
+        .solution-text {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        /* Error Message */
+        .error {
+            display: none;
+            background: #fadbd8;
+            color: #c0392b;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #e74c3c;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px 20px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .upload-options {
+                grid-template-columns: 1fr;
+            }
+
+            .option-btn {
+                padding: 18px;
+            }
+
+            .disease-name {
+                font-size: 1.4rem;
+            }
+
+            .camera-frame {
+                width: 85%;
+                height: 55%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .option-icon {
+                font-size: 2rem;
+            }
+
+            .btn {
+                padding: 13px;
+                font-size: 0.95rem;
+            }
+
+            .camera-controls {
+                flex-direction: column;
+            }
+
+            .permission-content {
+                padding: 25px 20px;
+            }
+
+            .permission-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* iOS specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            #cameraView {
+                -webkit-transform: scaleX(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌿 Plant Disease Detector</h1>
+            <p class="subtitle">Upload or capture a tomato leaf image for instant diagnosis</p>
+        </div>
+
+        <!-- Upload/Camera Options -->
+        <div class="upload-options" id="uploadOptions">
+            <div class="option-btn" id="uploadBtn">
+                <div class="option-icon">📁</div>
+                <div class="option-text">Upload Image</div>
+            </div>
+            <div class="option-btn" id="cameraBtn">
+                <div class="option-icon">📷</div>
+                <div class="option-text">Take Photo</div>
+            </div>
+        </div>
+
+        <!-- Hidden File Inputs -->
+        <input type="file" id="fileInput" accept="image/*">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+
+        <!-- Camera View -->
+        <div class="camera-container" id="cameraContainer">
+            <div class="camera-wrapper">
+                <video id="cameraView" autoplay playsinline muted></video>
+                <div class="camera-overlay">
+                    <div class="camera-frame"></div>
+                </div>
+            </div>
+            <canvas id="capturedCanvas"></canvas>
+            <div class="camera-controls">
+                <div class="capture-button-wrapper">
+                    <button class="btn btn-capture" id="captureBtn">📸 Capture Photo</button>
+                    <div class="capture-ring"></div>
+                </div>
+            </div>
+            <button class="btn btn-danger" id="closeCameraBtn">❌ Close Camera</button>
+        </div>
+
+        <!-- Image Preview -->
+        <div class="preview-container" id="previewContainer">
+            <img id="imagePreview" alt="Selected Image">
+            <button class="btn btn-primary" id="analyzeBtn">🔍 Analyze Disease</button>
+            <button class="btn btn-secondary" id="retakeBtn">↩️ Choose Another Image</button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">Analyzing your plant image...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="result-item">
+                <span class="result-label">🦠 Disease Detected</span>
+                <div class="result-value disease-name" id="diseaseName"></div>
+            </div>
+            <div class="result-item">
+                <span class="result-label">📊 Confidence Level</span>
+                <div class="result-value">
+                    <span class="confidence-badge" id="confidence"></span>
+                </div>
+            </div>
+            <div class="result-item">
+                <span class="result-label">💊 Recommended Solution</span>
+                <div class="result-value solution-text" id="solution"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error" id="error"></div>
+    </div>
+
+    <!-- Permission Modal -->
+    <div class="permission-modal" id="permissionModal">
+        <div class="permission-content">
+            <div class="permission-icon">📷</div>
+            <h2 class="permission-title">Camera Access</h2>
+            <p class="permission-text">This app needs camera access to take photos of plant leaves for disease detection. Your privacy is important - photos are only used for analysis.</p>
+            <div class="permission-buttons">
+                <button class="btn btn-secondary" id="cancelPermission">Cancel</button>
+                <button class="btn btn-primary" id="allowPermission">Allow Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadOptions = document.getElementById('uploadOptions');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const fileInput = document.getElementById('fileInput');
+        const cameraInput = document.getElementById('cameraInput');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const cameraView = document.getElementById('cameraView');
+        const capturedCanvas = document.getElementById('capturedCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const permissionModal = document.getElementById('permissionModal');
+        const allowPermission = document.getElementById('allowPermission');
+        const cancelPermission = document.getElementById('cancelPermission');
+
+        let selectedFile = null;
+        let stream = null;
+
+        // Detect iOS devices
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        // Check if camera is available
+        function isCameraAvailable() {
+            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        }
+
+        // Upload Button - Opens file selector (gallery only)
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File Input Change - When user selects a file from gallery
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Camera Input Change - When user takes a photo with native camera
+        cameraInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Camera Button - Show permission modal first on iOS, then use native camera
+        cameraBtn.addEventListener('click', () => {
+            if (isIOS()) {
+                // On iOS, show permission modal first
+                permissionModal.classList.add('active');
+            } else {
+                // On Android and desktop, check if web camera is available
+                if (!isCameraAvailable()) {
+                    showError('Camera is not available on this device. Please use the upload option.');
+                    return;
+                }
+                permissionModal.classList.add('active');
+            }
+        });
+
+        // Cancel Permission
+        cancelPermission.addEventListener('click', () => {
+            permissionModal.classList.remove('active');
+        });
+
+        // Allow Permission - Different behavior for iOS vs others
+        allowPermission.addEventListener('click', async () => {
+            permissionModal.classList.remove('active');
+            
+            if (isIOS()) {
+                // On iOS, open the native camera input
+                cameraInput.click();
+            } else {
+                // On Android/Desktop, open web camera
+                await openCamera();
+            }
+        });
+
+        // Open Camera Function
+        async function openCamera() {
+            try {
+                // Request camera access with mobile-friendly constraints
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' }, // Prefer back camera
+                        width: { ideal: 1920, max: 1920 },
+                        height: { ideal: 1080, max: 1080 }
+                    },
+                    audio: false
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                cameraView.srcObject = stream;
+                
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    cameraView.onloadedmetadata = () => {
+                        cameraView.play();
+                        resolve();
+                    };
+                });
+
+                uploadOptions.style.display = 'none';
+                cameraContainer.classList.add('active');
+                hideResults();
+
+            } catch (err) {
+                console.error('Camera access error:', err);
+                
+                let errorMessage = 'Camera access denied. ';
+                
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMessage += 'Please allow camera permission in your browser settings and try again.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMessage += 'No camera found on this device.';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMessage += 'Camera is already in use by another application.';
+                } else {
+                    errorMessage += 'Please use the upload option instead.';
+                }
+                
+                showError(errorMessage);
+            }
+        }
+
+        // Capture Button - Takes photo from video stream
+        captureBtn.addEventListener('click', () => {
+            capturePhoto();
+        });
+
+        // Capture Photo Function - Works on both iOS and Android
+        function capturePhoto() {
+            const canvas = capturedCanvas;
+            const video = cameraView;
+
+            // Ensure video is playing
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+                showError('Camera is not ready. Please wait a moment and try again.');
+                return;
+            }
+
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Add a brief visual feedback
+            captureBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                captureBtn.style.transform = 'scale(1)';
+            }, 200);
+
+            // Convert canvas to blob with high quality
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    showError('Failed to capture image. Please try again.');
+                    return;
+                }
+
+                // Create a File object from blob
+                const timestamp = new Date().getTime();
+                const file = new File([blob], `plant-capture-${timestamp}.jpg`, { 
+                    type: 'image/jpeg',
+                    lastModified: timestamp
+                });
+                
+                handleFile(file);
+                stopCamera();
+            }, 'image/jpeg', 0.95); // 95% quality for better image
+        }
+
+        // Close Camera Button
+        closeCameraBtn.addEventListener('click', () => {
+            stopCamera();
+        });
+
+        // Stop camera stream and reset UI
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                stream = null;
+            }
+            cameraView.srcObject = null;
+            cameraContainer.classList.remove('active');
+            uploadOptions.style.display = 'grid';
+        }
+
+        // Handle file (from upload or camera)
+        function handleFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type.toLowerCase())) {
+                showError('Please select a valid image file (JPG, PNG, WEBP)');
+                return;
+            }
+
+            // Validate file size (16MB limit)
+            const maxSize = 16 * 1024 * 1024; // 16MB
+            if (file.size > maxSize) {
+                showError('Image size must be less than 16MB');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Create preview using FileReader
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                uploadOptions.style.display = 'none';
+                previewContainer.classList.add('active');
+                hideResults();
+            };
+            reader.onerror = () => {
+                showError('Failed to read the image file. Please try another image.');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Analyze Button - Send to Flask backend
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            hideResults();
+            loading.classList.add('active');
+            analyzeBtn.disabled = true;
+
+            // Create FormData to send file
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                // Send POST request to Flask /predict endpoint
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && !data.error) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Analysis failed. Please try again.');
+                }
+            } catch (err) {
+                console.error('Request error:', err);
+                showError('Connection error. Please check your internet and try again.');
+            } finally {
+                loading.classList.remove('active');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // Display results from Flask response
+        function displayResults(data) {
+            const diseaseElement = document.getElementById('diseaseName');
+            const confidenceElement = document.getElementById('confidence');
+            const solutionElement = document.getElementById('solution');
+
+            diseaseElement.textContent = data.prediction;
+            confidenceElement.textContent = data.confidence;
+            solutionElement.textContent = data.solution;
+
+            // Style based on disease type
+            if (data.prediction.toLowerCase().includes('healthy')) {
+                diseaseElement.classList.add('healthy');
+            } else {
+                diseaseElement.classList.remove('healthy');
+            }
+
+            // Style based on confidence level
+            const confValue = parseFloat(data.confidence);
+            if (confValue < 60) {
+                confidenceElement.classList.add('low');
+            } else {
+                confidenceElement.classList.remove('low');
+            }
+
+            results.classList.add('active');
+            error.classList.remove('active');
+        }
+
+        // Show error message
+        function showError(message) {
+            error.textContent = '⚠️ ' + message;
+            error.classList.add('active');
+            results.classList.remove('active');
+        }
+
+        // Hide results and errors
+        function hideResults() {
+            results.classList.remove('active');
+            error.classList.remove('active');
+        }
+
+        // Retake Button - Reset to choose another image
+        retakeBtn.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            cameraInput.value = '';
+            previewContainer.classList.remove('active');
+            uploadOptions.style.display = 'grid';
+            hideResults();
+        });
+
+        // Cleanup camera on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Handle visibility change (when user switches tabs/apps)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && stream) {
+                // Optionally pause the camera when tab is hidden
+                // This can help with performance on mobile devices
+                const tracks = stream.getVideoTracks();
+                tracks.forEach(track => {
+                    if (track.readyState === 'live') {
+                        track.enabled = false;
+                    }
+                });
+            } else if (!document.hidden && stream) {
+                const tracks = stream.getVideoTracks();
+                tracks.forEach(track => {
+                    track.enabled = true;
+                });
+            }
+        });
+
+        // Prevent zoom on double-tap for better mobile UX
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (event) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
