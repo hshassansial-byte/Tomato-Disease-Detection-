@@ -3,7 +3,7 @@ The goal of this project was to build a robust tomato leaf disease detection sys
 
 The models were trained on a hybrid dataset containing both laboratory and real-life field images, but the final evaluation was performed only on a separate testing dataset made up of real farmer-style images.
 
-# Model Performance on Real-World Test Dataset
+## Model Performance on Real-World Test Dataset
 Custom CNN: 86% Accuracy
 VGG16: 44% Accuracy
 ResNet50: 38% Accuracy
